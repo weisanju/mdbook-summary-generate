@@ -147,10 +147,12 @@ mod nop_lib {
                 let file_name = path.file_name().unwrap().to_str().unwrap();
 
                 if path.is_dir() {
-                    if !path.ends_with("book") || file_name != "images" {
+                    if !path.ends_with("book") && file_name != "images" {
                         let mut chapter = create_chapter(parent, path, file_name, root);
                         visit_dirs_build(path, _level + 1, &mut chapter, root)?;
                         children.push(chapter);
+                    } else {
+                        continue;
                     }
                 } else if path.extension().unwrap_or_default() == "md"
                     && !name.eq_ignore_ascii_case("README.md")
@@ -180,8 +182,7 @@ mod nop_lib {
 
                 let option = &x.path;
                 let buf = option.as_ref().unwrap();
-                let (type_name, _) = get_type_name_and_file_name(buf);
-                let type_name = trim_number(type_name);
+                let type_name = trim_number(get_type_name_and_file_name(buf).0);
                 if current_type != type_name {
                     current_type = type_name.to_string();
                     parent.sub_items.push(BookItem::Separator);
@@ -224,12 +225,11 @@ mod nop_lib {
     fn get_type_name_and_file_name(name: &Path) -> (&str, &str) {
         let x = name.file_name().unwrap().to_str().unwrap();
         let index = x.find('_').unwrap_or(0);
-        let type_name = if index > 0 {
-            &x[0..index]
+        if index > 0 {
+            (&x[0..index], &x[index + 1..])
         } else {
-            ""
-        };
-        (type_name, &x[index..])
+            ("99.", x)
+        }
     }
 
 
@@ -244,7 +244,7 @@ mod nop_lib {
         let name = trim_number(name);
         let mut vec = parent.parent_names.clone();
         vec.push(name.to_string());
-        Chapter::new(get_type_name_and_file_name(path).1, content, relative, vec)
+        Chapter::new(trim_number(get_type_name_and_file_name(path).1), content, relative, vec)
     }
 
     fn get_content_from_index(path: &Path, relative_name: &mut PathBuf) -> String {
@@ -272,14 +272,8 @@ mod nop_lib {
         }
 
         fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
-            // if let Some(cfg) = ctx.config.get_preprocessor(self.name()) {}
-
             let root = &ctx.root.as_path().join("src");
-
             let mut root_chapter = Chapter::new("", "".to_string(), "", vec![]);
-
-            root_chapter.number = Some(SectionNumber::from_iter(vec![]));
-
             visit_dirs_build(root, 0, &mut root_chapter, root)?;
             book.sections = root_chapter.sub_items;
             Ok(book)
