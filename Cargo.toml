@@ -1,6 +1,6 @@
 [package]
 name = "mdbook-summary-generate"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A mdbook preprocessor to generate SUMMARY.md from a directory structure"
 license = "MIT"
