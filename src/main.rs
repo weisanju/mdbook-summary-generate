@@ -172,7 +172,6 @@ mod nop_lib {
 
             //handle index
             for (index, mut x) in children.into_iter().enumerate() {
-
                 let mut section_number = parent.number.clone().unwrap_or_else(|| SectionNumber::from_iter(vec![]));
                 section_number.push(index as u32);
                 x.number = Some(section_number);
@@ -245,7 +244,7 @@ mod nop_lib {
         let name = trim_number(name);
         let mut vec = parent.parent_names.clone();
         vec.push(name.to_string());
-        Chapter::new(name, content, relative, vec)
+        Chapter::new(get_type_name_and_file_name(path).1, content, relative, vec)
     }
 
     fn get_content_from_index(path: &Path, relative_name: &mut PathBuf) -> String {
