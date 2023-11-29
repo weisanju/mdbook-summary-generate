@@ -120,16 +120,6 @@ mod nop_lib {
         }
     }
 
-    impl Item {
-        #[warn(dead_code)]
-        fn recursive_handle(&self, level: usize, f: fn(&Item, usize)) {
-            f(self, level);
-            for x in &self.children {
-                x.recursive_handle(level + 1, f)
-            }
-        }
-    }
-
     fn visit_dirs_build(dir: &Path, _level: usize, parent: &mut Chapter, root: &PathBuf) -> io::Result<()> {
         if dir.ends_with("book") || dir.file_name().unwrap() == "images" {
             return Ok(());
@@ -163,6 +153,7 @@ mod nop_lib {
                     children.push(chapter);
                 }
             }
+
             children.sort_by(|a, b| {
                 get_type_name_and_file_name(a.path.as_ref().unwrap())
                     .cmp(
@@ -170,18 +161,15 @@ mod nop_lib {
                     )
             });
 
-            let mut current_type = "".to_string();
+            let mut current_type = "未分类".to_string();
 
             //handle index
             for (index, mut x) in children.into_iter().enumerate() {
                 let mut section_number = parent.number.clone().unwrap_or_else(|| SectionNumber::from_iter(vec![]));
                 section_number.push(index as u32);
                 x.number = Some(section_number);
-
                 handle_index(&mut x);
-
-                let option = &x.path;
-                let buf = option.as_ref().unwrap();
+                let buf = x.path.as_ref().unwrap();
                 let type_name = trim_number(get_type_name_and_file_name(buf).0);
                 if current_type != type_name {
                     current_type = type_name.to_string();
@@ -228,7 +216,7 @@ mod nop_lib {
         if index > 0 {
             (&x[0..index], &x[index + 1..])
         } else {
-            ("99.", x)
+            ("99.未分类", x)
         }
     }
 
@@ -240,10 +228,10 @@ mod nop_lib {
         } else {
             fs::read_to_string(path).unwrap_or_default()
         };
-
-        let name = trim_number(name);
         let mut vec = parent.parent_names.clone();
-        vec.push(name.to_string());
+        if !parent.name.is_empty() {
+            vec.push(parent.name.clone());
+        }
         Chapter::new(trim_number(get_type_name_and_file_name(path).1), content, relative, vec)
     }
 
@@ -287,6 +275,12 @@ mod nop_lib {
     #[cfg(test)]
     mod test {
         use super::*;
+
+        #[test]
+        fn test_tuple() {
+            println!("{:?}", get_type_name_and_file_name(Path::new("chapter_2.md")).cmp(&get_type_name_and_file_name(Path::new("chapter1_2.md"))));
+        }
+
 
         #[test]
         fn summary_generate() {
